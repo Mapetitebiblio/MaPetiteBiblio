@@ -1,14 +1,15 @@
 <!doctype html>
 <html lang='fr'><head>
 <meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>
-<title>MaPetiteBiblio — v5</title>
+<title>MaPetiteBiblio — v5.3</title>
 <link rel='manifest' href='manifest.json'><meta name='apple-mobile-web-app-capable' content='yes'><link rel='apple-touch-icon' href='icon-192.png'>
 <style>
 :root{--bg:#f8e2e8;--card:#fff;--ink:#111827;--muted:#6b7280;--accent:#ef9fb2;--accent-ink:#4a1723;--radius:18px;--pad:16px}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-header{position:sticky;top:0;background:rgba(248,226,232,.9);backdrop-filter:blur(8px);padding:10px 14px;border-bottom:1px solid #f3d3da;z-index:10}
-h1{margin:0;font-size:18px;display:flex;align-items:center;gap:8px}h1 img{width:24px;height:24px;border-radius:6px;border:1px solid #eee}
-main{max-width:720px;margin:0 auto;padding:12px; padding-bottom:90px}
+header{position:sticky;top:0;background:rgba(248,226,232,.97);backdrop-filter:blur(8px);padding:8px 12px;border-bottom:1px solid #f3d3da;z-index:10}
+h1{margin:0;font-size:18px;display:flex;align-items:center;gap:8px}
+h1 img{width:28px;height:28px;border-radius:999px;border:1px solid #eee;background:#fff}
+main{max-width:720px;margin:0 auto;padding:12px; padding-bottom:110px}
 .card{background:var(--card);border-radius:var(--radius);border:1px solid #eee;box-shadow:0 12px 32px rgba(0,0,0,.06);padding:var(--pad);margin-top:12px}
 label{font-size:14px;color:#374151;margin-bottom:6px;display:block}
 input,select,button,textarea{font-size:18px}
@@ -26,9 +27,19 @@ input[type=text],input[type=date],select,textarea{width:100%;padding:14px;border
 .nav a.active{background:var(--accent);color:var(--accent-ink)}
 .hidden{display:none}.scanbox{background:#000;border-radius:16px;aspect-ratio:3/2;width:100%}
 .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;margin-left:8px}
+.list{display:grid;gap:8px;margin-top:10px}
+.item{display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:12px;padding:10px 12px;background:#fff}
+.item .name{font-weight:800}
+.item .sub{font-size:12px;color:#6b7280}
+.item .btns{display:flex;gap:8px}
+.iconbtn{border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:8px 10px;font-weight:800}
+.searchrow{display:flex;gap:8px;align-items:center}
+select.sort{padding:10px;border-radius:10px;border:1px solid #e5e7eb}
+.danger{background:#fee2e2;color:#7f1d1d;border-color:#fecaca}
+.settings{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 </style></head>
 <body>
-<header><h1><img src='icon-192.png'>MaPetiteBiblio</h1></header>
+<header><h1><img src='logo.png' alt=''>MaPetiteBiblio</h1></header>
 <main>
   <div class='card' id='screen-pret'>
     <h2>📦 Prêter un livre</h2>
@@ -67,7 +78,23 @@ input[type=text],input[type=date],select,textarea{width:100%;padding:14px;border
 Liam
 Nina'></textarea>
     <button class='big btn' id='btnAddBulk' style='margin-top:8px'>Ajouter la liste</button>
-    <div id='listStudents' class='helper' style='margin-top:10px'></div>
+
+    <div class='searchrow' style='margin-top:10px'>
+      <input type='text' id='searchStudents' placeholder='Rechercher un prénom' style='flex:2'>
+      <select id='sortStudents' class='sort' style='flex:1'>
+        <option value='az'>Trier A→Z</option>
+        <option value='za'>Trier Z→A</option>
+        <option value='new'>Plus récents</option>
+      </select>
+    </div>
+    <div id='listStudents' class='list'></div>
+
+    <div class='settings'>
+      <button class='btn' id='btnExportJSON'>💾 Exporter données (JSON)</button>
+      <input type='file' id='importInput' accept='.json' style='display:none'>
+      <button class='btn' id='btnImportJSON'>📥 Importer (JSON)</button>
+      <button class='btn danger' id='btnResetAll'>🗑️ Tout réinitialiser</button>
+    </div>
   </div>
 
   <div class='card hidden' id='screen-livres'>
@@ -78,13 +105,24 @@ Nina'></textarea>
       <button class='btn primary' id='btnAddBook' style='flex:1'>Ajouter</button>
     </div>
     <button class='big btn' id='btnScanAddBook' style='margin-top:8px'>📷 Scanner pour ajouter</button>
-    <div id='listBooks' class='helper' style='margin-top:10px'></div>
+
+    <div class='searchrow' style='margin-top:10px'>
+      <input type='text' id='searchBooks' placeholder='Rechercher par titre ou code' style='flex:2'>
+      <select id='sortBooks' class='sort' style='flex:1'>
+        <option value='az'>Trier A→Z</option>
+        <option value='za'>Trier Z→A</option>
+        <option value='new'>Plus récents</option>
+      </select>
+    </div>
+    <div id='listBooks' class='list'></div>
   </div>
 
   <div class='card hidden' id='screen-histo'>
     <h2>🗂️ Historique</h2>
     <div id='histoList' class='helper'></div>
-    <button class='big btn' id='btnExport' style='margin-top:10px'>⬇️ Exporter CSV</button>
+    <div class='actions' style='margin-top:10px'>
+      <button class='big btn' id='btnExportCSV' style='flex:1'>⬇️ Exporter CSV</button>
+    </div>
   </div>
 </main>
 
@@ -100,7 +138,8 @@ Nina'></textarea>
 
 <script src='https://unpkg.com/@zxing/library@0.20.0'></script>
 <script>
-const DBKEY='mpb_v5'; const $=s=>document.querySelector(s); const screens={pret:'#screen-pret',rendre:'#screen-rendre',eleves:'#screen-eleves',livres:'#screen-livres',historique:'#screen-histo'};
+const DBKEY='mpb_v5_3'; const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+const screens={pret:'#screen-pret',rendre:'#screen-rendre',eleves:'#screen-eleves',livres:'#screen-livres',historique:'#screen-histo'};
 let state; try{state=JSON.parse(localStorage.getItem(DBKEY) || '{"students":[],"books":[],"loans":[],"history":[]}')}catch(e){state={"students":[],"books":[],"loans":[],"history":[]}};
 function save(){ try{localStorage.setItem(DBKEY, JSON.stringify(state));}catch(e){} }
 function uid(p){ return p+Math.random().toString(36).slice(2,9); }
@@ -110,26 +149,92 @@ function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show')
 function show(tab){
   Object.values(screens).forEach(s=>$(s).classList.add('hidden'));
   ( $(screens[tab]) || $(screens.pret) ).classList.remove('hidden');
-  document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
+  $$('.nav a').forEach(a=>a.classList.remove('active'));
   $('#tab-'+tab)?.classList.add('active');
   location.hash='#'+tab; render();
 }
 window.addEventListener('hashchange', ()=> show((location.hash||'#pret').slice(1)) );
 
-function render(){
+function renderStudents(){
   $('#selStudent').innerHTML='<option value="">— choisir —</option>'+ state.students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   $('#badgeStudents').textContent=state.students.length;
-  $('#listStudents').innerHTML = state.students.map(s=>`• ${s.name}`).join('<br>') || 'Aucun élève pour le moment.';
+
+  const q=($('#searchStudents').value||'').toLowerCase(); const sort=$('#sortStudents').value||'az';
+  let arr=[...state.students];
+  if(q) arr=arr.filter(s=>s.name.toLowerCase().includes(q));
+  if(sort==='az') arr.sort((a,b)=>a.name.localeCompare(b.name));
+  if(sort==='za') arr.sort((a,b)=>b.name.localeCompare(a.name));
+  if(sort==='new') arr.reverse();
+  $('#listStudents').innerHTML = arr.map(s=>{
+    const hasLoans = state.loans.some(l=>l.studentId===s.id);
+    return `<div class='item'>
+      <div><div class='name'>${s.name}</div><div class='sub'>${hasLoans? 'Prêts en cours' : 'Aucun prêt'}</div></div>
+      <div class='btns'>
+        <button class='iconbtn' data-act='edit-stu' data-id='${s.id}'>✏️</button>
+        <button class='iconbtn danger' data-act='del-stu' data-id='${s.id}'>🗑️</button>
+      </div></div>`;
+  }).join('') || '<div class="helper">Aucun élève pour le moment.</div>';
+}
+function renderBooks(){
   $('#badgeBooks').textContent=state.books.length;
-  $('#listBooks').innerHTML = state.books.map(b=>`• ${b.title? (b.title+' — '): ''}<code>${b.code}</code>`).join('<br>') || 'Aucun livre pour le moment.';
+  const q=($('#searchBooks').value||'').toLowerCase(); const sort=$('#sortBooks').value||'az';
+  let arr=[...state.books];
+  if(q) arr=arr.filter(b=>(b.title||'').toLowerCase().includes(q) || (b.code||'').toLowerCase().includes(q));
+  if(sort==='az') arr.sort((a,b)=> (a.title||a.code).localeCompare(b.title||b.code));
+  if(sort==='za') arr.sort((a,b)=> (b.title||b.code).localeCompare(a.title||a.code));
+  if(sort==='new') arr.reverse();
+  $('#listBooks').innerHTML = arr.map(b=>{
+    const onLoan = state.loans.some(l=>l.bookId===b.id);
+    return `<div class='item'>
+      <div><div class='name'>${b.title || '—'}</div><div class='sub'><code>${b.code}</code> ${onLoan? ' • emprunté' : ''}</div></div>
+      <div class='btns'>
+        <button class='iconbtn' data-act='edit-bok' data-id='${b.id}'>✏️</button>
+        <button class='iconbtn danger' data-act='del-bok' data-id='${b.id}'>🗑️</button>
+      </div></div>`;
+  }).join('') || '<div class="helper">Aucun livre pour le moment.</div>';
+}
+function renderHisto(){
   $('#histoList').innerHTML = state.history.slice().reverse().map(h=>{
     const s=state.students.find(x=>x.id===h.studentId)?.name||'—';
     const b=state.books.find(x=>x.id===h.bookId)?.title||state.books.find(x=>x.id===h.bookId)?.code||'—';
     return `• ${h.dateOut} — ${s} → ${b}${h.dateIn? ' (retour '+h.dateIn+')':''}`;
   }).join('<br>') || 'Aucun historique.';
 }
+function render(){ renderStudents(); renderBooks(); renderHisto(); }
 
-// Students
+// Click actions (edit/delete)
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button.iconbtn'); if(!btn) return;
+  const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
+  if (act==='del-stu'){
+    const hasLoans = state.loans.some(l=>l.studentId===id);
+    if (hasLoans){ alert('Impossible : cet élève a un prêt en cours. Marque le retour d’abord.'); return; }
+    if (!confirm('Supprimer cet élève ?')) return;
+    state.students = state.students.filter(s=>s.id!==id);
+    save(); render(); toast('Élève supprimé');
+  }
+  if (act==='edit-stu'){
+    const s = state.students.find(x=>x.id===id); if(!s) return;
+    const nv = prompt('Nouveau prénom :', s.name);
+    if (nv===null) return;
+    s.name = nv.trim(); save(); render(); toast('Prénom modifié');
+  }
+  if (act==='del-bok'){
+    const onLoan = state.loans.some(l=>l.bookId===id);
+    if (onLoan){ alert('Impossible : ce livre est emprunté. Rends-le d’abord.'); return; }
+    if (!confirm('Supprimer ce livre ?')) return;
+    state.books = state.books.filter(b=>b.id!==id);
+    save(); render(); toast('Livre supprimé');
+  }
+  if (act==='edit-bok'){
+    const b = state.books.find(x=>x.id===id); if(!b) return;
+    const nv = prompt('Nouveau titre (laisser vide pour aucun) :', b.title||'');
+    if (nv===null) return;
+    b.title = nv.trim(); save(); render(); toast('Titre modifié');
+  }
+});
+
+// Add student / bulk
 $('#btnAddStudent').addEventListener('click', ()=>{
   const name=($('#inStudentName').value||'').trim(); if(!name) return toast('Entre un prénom');
   state.students.push({id:uid('s_'), name}); $('#inStudentName').value=''; save(); render(); toast('Élève ajouté');
@@ -138,16 +243,20 @@ $('#btnAddBulk').addEventListener('click', ()=>{
   const lines=($('#inBulk').value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   if(!lines.length) return toast('Liste vide');
   const exists=new Set(state.students.map(s=>s.name.toLowerCase())); let n=0;
-  lines.forEach(nm=>{ if(!exists.has(nm.toLowerCase())){ state.students.push({id:uid('s_'), name:nm}); n++; } });
+  lines.forEach(nm=>{ if(!exists.has(nm.toLowerCase())){ state.students.push({id:uid('s_'), name:nm}); n++; }});
   $('#inBulk').value=''; save(); render(); toast(n+' élèves ajoutés');
 });
+$('#searchStudents').addEventListener('input', renderStudents);
+$('#sortStudents').addEventListener('change', renderStudents);
 
-// Books
+// Add book
 $('#btnAddBook').addEventListener('click', ()=>{
   const code=($('#inBookCode').value||'').trim(); if(!code) return toast('Entre un code');
   if(state.books.some(b=>b.code===code)) return toast('Code déjà présent');
   const title=($('#inBookTitle').value||'').trim(); state.books.push({id:uid('b_'), code, title}); $('#inBookCode').value=''; $('#inBookTitle').value=''; save(); render(); toast('Livre ajouté');
 });
+$('#searchBooks').addEventListener('input', renderBooks);
+$('#sortBooks').addEventListener('change', renderBooks);
 
 // Loan
 $('#btnPret').addEventListener('click', ()=>{
@@ -190,8 +299,8 @@ $('#btnScanBook').addEventListener('click', ()=> scan((txt)=>{ $('#bookCode').va
 $('#btnScanAddBook').addEventListener('click', ()=> scan((txt)=>{ $('#inBookCode').value=txt; toast('Code détecté'); }));
 $('#btnScanReturn').addEventListener('click', ()=> scan((txt)=>{ $('#returnCode').value=txt; $('#btnDoReturn').click(); }));
 
-// Export
-$('#btnExport').addEventListener('click', ()=>{
+// Export CSV (historique)
+$('#btnExportCSV').addEventListener('click', ()=>{
   const rows=[['Type','Date prêt','Date retour','Élève','Livre','Code']];
   state.history.forEach(h=>{
     const s=state.students.find(x=>x.id===h.studentId)?.name||''; const b=state.books.find(x=>x.id===h.bookId);
@@ -201,7 +310,33 @@ $('#btnExport').addEventListener('click', ()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='mapetitebiblio.csv'; a.click();
 });
 
-// Init
+// Export / Import JSON (tout l'état)
+$('#btnExportJSON').addEventListener('click', ()=>{
+  const data = JSON.stringify(state, null, 2);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download='mapetitebiblio-donnees.json'; a.click();
+});
+$('#btnImportJSON').addEventListener('click', ()=> $('#importInput').click());
+$('#importInput').addEventListener('change', (e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!confirm('Importer ces données et remplacer l’existant ?')) return;
+      state = {students:data.students||[], books:data.books||[], loans:data.loans||[], history:data.history||[]};
+      save(); render(); toast('Import terminé');
+    }catch(err){ alert('Fichier invalide'); }
+  };
+  reader.readAsText(file);
+});
+
+// Reset all
+$('#btnResetAll').addEventListener('click', ()=>{
+  if(!confirm('Tout réinitialiser ? (élèves, livres, prêts, historique)')) return;
+  if(!confirm('Vraiment tout effacer ?')) return;
+  state={students:[],books:[],loans:[],history:[]}; save(); render(); toast('Données réinitialisées');
+});
+
 if('serviceWorker' in navigator){ addEventListener('load', ()=> navigator.serviceWorker.register('service-worker.js')); }
 show((location.hash||'#pret').slice(1)); render();
 </script>
