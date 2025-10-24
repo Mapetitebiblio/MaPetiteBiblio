@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang='fr'><head>
 <meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>
-<title>MaPetiteBiblio — v6.1</title>
+<title>MaPetiteBiblio — v6.2</title>
 <link rel="icon" href="favicon.ico" />
 <link rel='manifest' href='manifest.json'><meta name='apple-mobile-web-app-capable' content='yes'><link rel='apple-touch-icon' href='icon-192.png'>
 <style>
@@ -54,13 +54,13 @@ select.sort{padding:10px;border-radius:10px;border:1px solid #e5e7eb}
         <button class='big btn primary' id='btnPret'>Enregistrer le prêt</button>
         <button class='big btn' id='btnScanBook'>📷 Scanner livre</button>
       </div>
-      <div class='helper'>Astuce : QR élève → code livre = prêt en 2 gestes.</div>
+      <div class='helper'>Nouveau : le scan peut prêter directement si un élève est choisi. Si l’élève avait déjà un livre, l’ancien est marqué <b>rendu</b> automatiquement.</div>
     </div>
   </div>
 
   <div class='card hidden' id='screen-rendre'>
     <h2>✅ Rendre un livre</h2>
-    <p class='helper'>Scanne le code du livre emprunté, il sera marqué <b>rendu</b> automatiquement.</p>
+    <p class='helper'>Scanne le code du livre emprunté, il sera marqué <b>rendu</b>.</p>
     <div class='actions'>
       <button class='big btn primary' id='btnScanReturn'>📷 Scanner livre</button>
       <input type='text' id='returnCode' class='big' placeholder='Ou entrer le code'>
@@ -142,7 +142,7 @@ Nina'></textarea>
 <script src='https://unpkg.com/@zxing/library@0.20.0'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'></script>
 <script>
-const DBKEY='mpb_v6_1'; const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+const DBKEY='mpb_v6_2'; const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
 const screens={pret:'#screen-pret',rendre:'#screen-rendre',eleves:'#screen-eleves',livres:'#screen-livres',historique:'#screen-histo'};
 let state; try{state=JSON.parse(localStorage.getItem(DBKEY) || '{"students":[],"books":[],"loans":[],"history":[]}')}catch(e){state={"students":[],"books":[],"loans":[],"history":[]}};
 function save(){ try{localStorage.setItem(DBKEY, JSON.stringify(state));}catch(e){} }
@@ -171,7 +171,7 @@ function renderStudents(){
   $('#listStudents').innerHTML = arr.map(s=>{
     const hasLoans = state.loans.some(l=>l.studentId===s.id);
     return `<div class='item'>
-      <div><div class='name'>${s.name}</div><div class='sub'>${hasLoans? 'Prêts en cours' : 'Aucun prêt'}</div></div>
+      <div><div class='name'>${s.name}</div><div class='sub'>${hasLoans? 'Prêt en cours' : 'Aucun prêt'}</div></div>
       <div class='btns'>
         <button class='iconbtn' data-act='edit-stu' data-id='${s.id}'>✏️</button>
         <button class='iconbtn danger' data-act='del-stu' data-id='${s.id}'>🗑️</button>
@@ -236,6 +236,37 @@ document.addEventListener('click', (e)=>{
   }
 });
 
+// ------- CORE: créer prêt + retour auto précédent -------
+function ensureBook(code){
+  let book=state.books.find(b=>b.code===code);
+  if(!book){ book={id:uid('b_'), code, title:''}; state.books.push(book); }
+  return book;
+}
+function closeOpenLoanForStudent(sid){
+  const li = state.loans.findIndex(l=>l.studentId===sid);
+  if(li>=0){
+    const loan = state.loans[li];
+    state.loans.splice(li,1);
+    const hist = state.history.slice().reverse().find(h=>h.studentId===sid && !h.dateIn);
+    if(hist) hist.dateIn = today();
+  }
+}
+function createLoanFor(sid, code){
+  const book = ensureBook(code);
+  // si le livre est déjà emprunté par quelqu'un d'autre -> bloqué
+  const taken = state.loans.find(l=>l.bookId===book.id);
+  if(taken && taken.studentId!==sid){
+    const who = state.students.find(s=>s.id===taken.studentId)?.name || 'un autre élève';
+    toast('Déjà emprunté par '+who); return false;
+  }
+  // fermer le prêt ouvert de cet élève (retour auto)
+  closeOpenLoanForStudent(sid);
+  // créer le nouveau prêt
+  state.loans.push({id:uid('l_'), studentId:sid, bookId:book.id, dateOut:today()});
+  state.history.push({id:uid('h_'), studentId:sid, bookId:book.id, dateOut:today(), dateIn:null});
+  save(); render(); return true;
+}
+
 // Ajouts / listes
 document.getElementById('btnAddStudent').addEventListener('click', ()=>{
   const name=(document.getElementById('inStudentName').value||'').trim(); if(!name){toast('Entre un prénom'); return;}
@@ -251,40 +282,22 @@ document.getElementById('btnAddBulk').addEventListener('click', ()=>{
 document.getElementById('searchStudents')?.addEventListener('input', renderStudents);
 document.getElementById('sortStudents')?.addEventListener('change', renderStudents);
 
-// Livres
-async function fetchBookMeta(isbn){
-  try{
-    const r = await fetch('https://openlibrary.org/isbn/'+encodeURIComponent(isbn)+'.json');
-    if(!r.ok) return null; const meta = await r.json();
-    return {title: meta.title||'', cover: 'https://covers.openlibrary.org/b/isbn/'+isbn+'-M.jpg'};
-  }catch(e){ return null; }
-}
-document.getElementById('btnAddBook').addEventListener('click', async ()=>{
+// Livres (ajout manuel)
+document.getElementById('btnAddBook').addEventListener('click', ()=>{
   const code=(document.getElementById('inBookCode').value||'').trim(); if(!code){toast('Entre un code'); return;}
   if(state.books.some(b=>b.code===code)){toast('Code déjà présent'); return;}
-  let title=(document.getElementById('inBookTitle').value||'').trim();
-  if(!title && document.getElementById('toggleNet').checked){
-    const meta = await fetchBookMeta(code);
-    if(meta){ title = meta.title||''; }
-  }
-  state.books.push({id:uid('b_'), code, title, cover: null});
-  document.getElementById('inBookCode').value=''; document.getElementById('inBookTitle').value=''; save(); render(); toast('Livre ajouté');
+  const title=(document.getElementById('inBookTitle').value||'').trim();
+  state.books.push({id:uid('b_'), code, title}); document.getElementById('inBookCode').value=''; document.getElementById('inBookTitle').value=''; save(); render(); toast('Livre ajouté');
 });
-document.getElementById('searchBooks').addEventListener('input', renderBooks);
-document.getElementById('sortBooks').addEventListener('change', renderBooks);
 
-// Prêt
+// Prêt manuel (bouton)
 document.getElementById('btnPret').addEventListener('click', ()=>{
   const sid=document.getElementById('selStudent').value; const code=(document.getElementById('bookCode').value||'').trim();
   if(!sid){toast('Choisis l’élève'); return;} if(!code){toast('Scanne/entre le code'); return;}
-  let book=state.books.find(b=>b.code===code); if(!book){ book={id:uid('b_'), code, title:''}; state.books.push(book); }
-  if(state.loans.find(l=>l.bookId===book.id)){toast('Déjà emprunté'); return;}
-  state.loans.push({id:uid('l_'), studentId:sid, bookId:book.id, dateOut:today()});
-  state.history.push({id:uid('h_'), studentId:sid, bookId:book.id, dateOut:today(), dateIn:null});
-  document.getElementById('bookCode').value=''; save(); render(); toast('Prêt enregistré');
+  if(createLoanFor(sid, code)){ document.getElementById('bookCode').value=''; toast('Prêt enregistré'); }
 });
 
-// Retour
+// Retour manuel
 document.getElementById('btnDoReturn').addEventListener('click', ()=>{
   const code=(document.getElementById('returnCode').value||'').trim(); if(!code){toast('Entre/scanne le code'); return;}
   const book=state.books.find(b=>b.code===code); if(!book){toast('Livre inconnu'); return;}
@@ -305,14 +318,22 @@ async function scan(callback){
     await reader.decodeFromVideoDevice(id, video, (res,err)=>{ if(res){ if(navigator.vibrate) navigator.vibrate(50); try{reader.reset()}catch(e){}; wrap.remove(); callback(res.text); } });
   }catch(e){ alert('Scan impossible : '+e.message); }
 }
+// QR élève → sélection directe
 document.getElementById('scanQRBtn').addEventListener('click', ()=> scan((txt)=>{
   if(String(txt).startsWith('MPB:')){
     const sid=String(txt).slice(4); const s=state.students.find(x=>x.id===sid); if(s){ document.getElementById('selStudent').value=s.id; toast('Élève : '+s.name); } else toast('QR inconnu');
   }else toast('QR élève attendu');
 }));
-document.getElementById('btnScanBook').addEventListener('click', ()=> scan((txt)=>{ document.getElementById('bookCode').value=txt; toast('Code livre scanné'); }));
-document.getElementById('btnScanAddBook').addEventListener('click', ()=> scan((txt)=>{ document.getElementById('inBookCode').value=txt; toast('Code détecté'); }));
-document.getElementById('btnScanReturn').addEventListener('click', ()=> scan((txt)=>{ document.getElementById('returnCode').value=txt; document.getElementById('btnDoReturn').click(); }));
+// Scan prêt direct si élève choisi
+document.getElementById('btnScanBook').addEventListener('click', ()=> scan((txt)=>{
+  const sid=document.getElementById('selStudent').value;
+  if(sid){ if(createLoanFor(sid, String(txt).trim())) toast('Prêt enregistré (scan)'); }
+  else { document.getElementById('bookCode').value=txt; toast('Code scanné — choisis un élève puis “Enregistrer le prêt”'); }
+}));
+// Ajout livre rapide (onglet Livres)
+document.getElementById('btnScanAddBook').addEventListener('click', ()=> scan((txt)=>{
+  document.getElementById('inBookCode').value=txt; toast('Code détecté (onglet Livres)');
+}));
 
 // Export CSV / JSON
 document.getElementById('btnExportCSV').addEventListener('click', ()=>{
@@ -343,7 +364,7 @@ document.getElementById('importInput').addEventListener('change', (e)=>{
   reader.readAsText(file);
 });
 
-// Cartes QR (CORRECTION v6.1 : on écrit le document complet avec script interne, rien n'apparaît dans la page principale)
+// Cartes QR (comme v6.1)
 function openQRCards(printNow=false){
   const data = JSON.stringify(state.students.map(s=>({id:s.id,name:s.name}))).replace(/</g,'\u003c');
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Cartes QR — MaPetiteBiblio</title>
