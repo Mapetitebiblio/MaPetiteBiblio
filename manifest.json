@@ -1,12 +1,10 @@
 {
   "name": "MaPetiteBiblio",
-  "short_name": "MaPetiteBiblio",
-  "description": "Une appli douce pour suivre les emprunts de livres à l’école (scan, prêts, retours, historique).",
+  "short_name": "MaBiblio",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "theme_color": "#2d2d2d",
-  "background_color": "#f7e6e8",
+  "background_color": "#f8e2e8",
+  "theme_color": "#1f2937",
   "icons": [
     {
       "src": "icon-192.png",
