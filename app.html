@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang='fr'><head>
 <meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>
-<title>MaPetiteBiblio — v6.0</title>
+<title>MaPetiteBiblio — v6.1</title>
 <link rel="icon" href="favicon.ico" />
 <link rel='manifest' href='manifest.json'><meta name='apple-mobile-web-app-capable' content='yes'><link rel='apple-touch-icon' href='icon-192.png'>
 <style>
@@ -142,7 +142,7 @@ Nina'></textarea>
 <script src='https://unpkg.com/@zxing/library@0.20.0'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'></script>
 <script>
-const DBKEY='mpb_v6_0'; const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+const DBKEY='mpb_v6_1'; const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
 const screens={pret:'#screen-pret',rendre:'#screen-rendre',eleves:'#screen-eleves',livres:'#screen-livres',historique:'#screen-histo'};
 let state; try{state=JSON.parse(localStorage.getItem(DBKEY) || '{"students":[],"books":[],"loans":[],"history":[]}')}catch(e){state={"students":[],"books":[],"loans":[],"history":[]}};
 function save(){ try{localStorage.setItem(DBKEY, JSON.stringify(state));}catch(e){} }
@@ -159,7 +159,6 @@ function show(tab){
 }
 window.addEventListener('hashchange', ()=> show((location.hash||'#pret').slice(1)) );
 
-// ---------- RENDERERS ----------
 function renderStudents(){
   $('#selStudent').innerHTML='<option value="">— choisir —</option>'+ state.students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   $('#badgeStudents').textContent=state.students.length;
@@ -206,7 +205,6 @@ function renderHisto(){
 }
 function render(){ renderStudents(); renderBooks(); renderHisto(); }
 
-// ---------- CLICKS EDIT/DELETE ----------
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('button.iconbtn'); if(!btn) return;
   const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
@@ -238,22 +236,22 @@ document.addEventListener('click', (e)=>{
   }
 });
 
-// ---------- AJOUTS ----------
-$('#btnAddStudent').addEventListener('click', ()=>{
-  const name=($('#inStudentName').value||'').trim(); if(!name) return toast('Entre un prénom');
-  state.students.push({id:uid('s_'), name}); $('#inStudentName').value=''; save(); render(); toast('Élève ajouté');
+// Ajouts / listes
+document.getElementById('btnAddStudent').addEventListener('click', ()=>{
+  const name=(document.getElementById('inStudentName').value||'').trim(); if(!name){toast('Entre un prénom'); return;}
+  state.students.push({id:uid('s_'), name}); document.getElementById('inStudentName').value=''; save(); render(); toast('Élève ajouté');
 });
-$('#btnAddBulk').addEventListener('click', ()=>{
-  const lines=($('#inBulk').value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  if(!lines.length) return toast('Liste vide');
+document.getElementById('btnAddBulk').addEventListener('click', ()=>{
+  const lines=(document.getElementById('inBulk').value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(!lines.length){toast('Liste vide'); return;}
   const exists=new Set(state.students.map(s=>s.name.toLowerCase())); let n=0;
   lines.forEach(nm=>{ if(!exists.has(nm.toLowerCase())){ state.students.push({id:uid('s_'), name:nm}); n++; }});
-  $('#inBulk').value=''; save(); render(); toast(n+' élèves ajoutés');
+  document.getElementById('inBulk').value=''; save(); render(); toast(n+' élèves ajoutés');
 });
-$('#searchStudents')?.addEventListener('input', renderStudents);
-$('#sortStudents')?.addEventListener('change', renderStudents);
+document.getElementById('searchStudents')?.addEventListener('input', renderStudents);
+document.getElementById('sortStudents')?.addEventListener('change', renderStudents);
 
-// Books
+// Livres
 async function fetchBookMeta(isbn){
   try{
     const r = await fetch('https://openlibrary.org/isbn/'+encodeURIComponent(isbn)+'.json');
@@ -261,41 +259,42 @@ async function fetchBookMeta(isbn){
     return {title: meta.title||'', cover: 'https://covers.openlibrary.org/b/isbn/'+isbn+'-M.jpg'};
   }catch(e){ return null; }
 }
-$('#btnAddBook').addEventListener('click', async ()=>{
-  const code=($('#inBookCode').value||'').trim(); if(!code) return toast('Entre un code');
-  if(state.books.some(b=>b.code===code)) return toast('Code déjà présent');
-  let title=($('#inBookTitle').value||'').trim();
-  if(!title && $('#toggleNet').checked){
+document.getElementById('btnAddBook').addEventListener('click', async ()=>{
+  const code=(document.getElementById('inBookCode').value||'').trim(); if(!code){toast('Entre un code'); return;}
+  if(state.books.some(b=>b.code===code)){toast('Code déjà présent'); return;}
+  let title=(document.getElementById('inBookTitle').value||'').trim();
+  if(!title && document.getElementById('toggleNet').checked){
     const meta = await fetchBookMeta(code);
     if(meta){ title = meta.title||''; }
   }
   state.books.push({id:uid('b_'), code, title, cover: null});
-  $('#inBookCode').value=''; $('#inBookTitle').value=''; save(); render(); toast('Livre ajouté');
+  document.getElementById('inBookCode').value=''; document.getElementById('inBookTitle').value=''; save(); render(); toast('Livre ajouté');
 });
-$('#searchBooks').addEventListener('input', renderBooks);
-$('#sortBooks').addEventListener('change', renderBooks);
+document.getElementById('searchBooks').addEventListener('input', renderBooks);
+document.getElementById('sortBooks').addEventListener('change', renderBooks);
 
-// ---------- PRET / RETOUR ----------
-$('#btnPret').addEventListener('click', ()=>{
-  const sid=$('#selStudent').value; const code=($('#bookCode').value||'').trim();
-  if(!sid) return toast('Choisis l’élève'); if(!code) return toast('Scanne/entre le code');
+// Prêt
+document.getElementById('btnPret').addEventListener('click', ()=>{
+  const sid=document.getElementById('selStudent').value; const code=(document.getElementById('bookCode').value||'').trim();
+  if(!sid){toast('Choisis l’élève'); return;} if(!code){toast('Scanne/entre le code'); return;}
   let book=state.books.find(b=>b.code===code); if(!book){ book={id:uid('b_'), code, title:''}; state.books.push(book); }
-  if(state.loans.find(l=>l.bookId===book.id)) return toast('Déjà emprunté');
+  if(state.loans.find(l=>l.bookId===book.id)){toast('Déjà emprunté'); return;}
   state.loans.push({id:uid('l_'), studentId:sid, bookId:book.id, dateOut:today()});
   state.history.push({id:uid('h_'), studentId:sid, bookId:book.id, dateOut:today(), dateIn:null});
-  $('#bookCode').value=''; save(); render(); toast('Prêt enregistré');
+  document.getElementById('bookCode').value=''; save(); render(); toast('Prêt enregistré');
 });
 
-$('#btnDoReturn').addEventListener('click', ()=>{
-  const code=($('#returnCode').value||'').trim(); if(!code) return toast('Entre/scanne le code');
-  const book=state.books.find(b=>b.code===code); if(!book) return toast('Livre inconnu');
-  const i=state.loans.findIndex(l=>l.bookId===book.id); if(i<0) return toast('Pas en prêt');
+// Retour
+document.getElementById('btnDoReturn').addEventListener('click', ()=>{
+  const code=(document.getElementById('returnCode').value||'').trim(); if(!code){toast('Entre/scanne le code'); return;}
+  const book=state.books.find(b=>b.code===code); if(!book){toast('Livre inconnu'); return;}
+  const i=state.loans.findIndex(l=>l.bookId===book.id); if(i<0){toast('Pas en prêt'); return;}
   const loan=state.loans[i]; state.loans.splice(i,1);
   const hist=state.history.slice().reverse().find(h=>h.bookId===loan.bookId && !h.dateIn); if(hist) hist.dateIn=today();
-  $('#returnCode').value=''; save(); render(); toast('Rendu enregistré');
+  document.getElementById('returnCode').value=''; save(); render(); toast('Rendu enregistré');
 });
 
-// ---------- SCAN ----------
+// Scanner (ZXing)
 let reader;
 async function scan(callback){
   try{
@@ -306,17 +305,17 @@ async function scan(callback){
     await reader.decodeFromVideoDevice(id, video, (res,err)=>{ if(res){ if(navigator.vibrate) navigator.vibrate(50); try{reader.reset()}catch(e){}; wrap.remove(); callback(res.text); } });
   }catch(e){ alert('Scan impossible : '+e.message); }
 }
-$('#scanQRBtn').addEventListener('click', ()=> scan((txt)=>{
+document.getElementById('scanQRBtn').addEventListener('click', ()=> scan((txt)=>{
   if(String(txt).startsWith('MPB:')){
-    const sid=String(txt).slice(4); const s=state.students.find(x=>x.id===sid); if(s){ $('#selStudent').value=s.id; toast('Élève : '+s.name); } else toast('QR inconnu');
+    const sid=String(txt).slice(4); const s=state.students.find(x=>x.id===sid); if(s){ document.getElementById('selStudent').value=s.id; toast('Élève : '+s.name); } else toast('QR inconnu');
   }else toast('QR élève attendu');
 }));
-$('#btnScanBook').addEventListener('click', ()=> scan((txt)=>{ $('#bookCode').value=txt; toast('Code livre scanné'); }));
-$('#btnScanAddBook').addEventListener('click', ()=> scan((txt)=>{ $('#inBookCode').value=txt; toast('Code détecté'); }));
-$('#btnScanReturn').addEventListener('click', ()=> scan((txt)=>{ $('#returnCode').value=txt; $('#btnDoReturn').click(); }));
+document.getElementById('btnScanBook').addEventListener('click', ()=> scan((txt)=>{ document.getElementById('bookCode').value=txt; toast('Code livre scanné'); }));
+document.getElementById('btnScanAddBook').addEventListener('click', ()=> scan((txt)=>{ document.getElementById('inBookCode').value=txt; toast('Code détecté'); }));
+document.getElementById('btnScanReturn').addEventListener('click', ()=> scan((txt)=>{ document.getElementById('returnCode').value=txt; document.getElementById('btnDoReturn').click(); }));
 
-// ---------- EXPORTS ----------
-$('#btnExportCSV').addEventListener('click', ()=>{
+// Export CSV / JSON
+document.getElementById('btnExportCSV').addEventListener('click', ()=>{
   const rows=[['Type','Date prêt','Date retour','Élève','Livre','Code']];
   state.history.forEach(h=>{
     const s=state.students.find(x=>x.id===h.studentId)?.name||''; const b=state.books.find(x=>x.id===h.bookId);
@@ -325,12 +324,12 @@ $('#btnExportCSV').addEventListener('click', ()=>{
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='mapetitebiblio.csv'; a.click();
 });
-$('#btnExportJSON').addEventListener('click', ()=>{
+document.getElementById('btnExportJSON').addEventListener('click', ()=>{
   const data = JSON.stringify(state, null, 2);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download='mapetitebiblio-donnees.json'; a.click();
 });
-$('#btnImportJSON').addEventListener('click', ()=> $('#importInput').click());
-$('#importInput').addEventListener('change', (e)=>{
+document.getElementById('btnImportJSON').addEventListener('click', ()=> document.getElementById('importInput').click());
+document.getElementById('importInput').addEventListener('change', (e)=>{
   const file=e.target.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=()=>{
@@ -344,10 +343,10 @@ $('#importInput').addEventListener('change', (e)=>{
   reader.readAsText(file);
 });
 
-// ---------- QR ELEVE : AFFICHER & IMPRIMER ----------
+// Cartes QR (CORRECTION v6.1 : on écrit le document complet avec script interne, rien n'apparaît dans la page principale)
 function openQRCards(printNow=false){
-  const w = window.open('', '_blank');
-  w.document.write(`<!doctype html><html><head><meta charset='utf-8'><title>Cartes QR — MaPetiteBiblio</title>
+  const data = JSON.stringify(state.students.map(s=>({id:s.id,name:s.name}))).replace(/</g,'\u003c');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Cartes QR — MaPetiteBiblio</title>
   <style>
   @page { size: A4; margin: 12mm; }
   body{font-family:system-ui;margin:0;padding:12mm;background:#f8e2e8;}
@@ -355,15 +354,10 @@ function openQRCards(printNow=false){
   .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px}
   .qr{width:96px;height:96px}
   .name{font-weight:800;font-size:18px}
-  </style></head><body><h2>Cartes QR — MaPetiteBiblio</h2><div class='grid' id='g'></div>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'></script>
+  </style></head><body><h2>Cartes QR — MaPetiteBiblio</h2><div class="grid" id="g"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
-  const students = ${JSON.stringify([{"id": s["id"], "name": s["name"]} for s in []])};
-  </script></body></html>`);
-  // Inject data after opening to avoid JSON size issues
-  const data = JSON.stringify(state.students.map(s=>({id:s.id,name:s.name})));
-  const inject = w.document.createElement('script');
-  inject.textContent = `const students = ${data};
+  const students = ${data};
   const g = document.getElementById('g');
   students.forEach(s=>{
     const div = document.createElement('div'); div.className='card';
@@ -371,15 +365,17 @@ function openQRCards(printNow=false){
     const lab = document.createElement('div'); lab.innerHTML = '<div class="name">'+s.name+'</div><div style="color:#6b7280;font-size:12px">MPB:'+s.id+'</div>'; div.appendChild(lab);
     g.appendChild(div);
     new QRCode(qrBox, {text: 'MPB:'+s.id, width:96, height:96});
-  });`;
-  w.document.body.appendChild(inject);
-  if(printNow){ w.addEventListener('load', ()=> w.print()); }
+  });
+  </script></body></html>`;
+  const w = window.open('', '_blank');
+  w.document.open(); w.document.write(html); w.document.close();
+  if(printNow){ w.onload = ()=> w.print(); }
 }
-$('#btnShowQRCards').addEventListener('click', ()=> openQRCards(false));
-$('#btnPrintQRCards').addEventListener('click', ()=> openQRCards(true));
+document.getElementById('btnShowQRCards').addEventListener('click', ()=> openQRCards(false));
+document.getElementById('btnPrintQRCards').addEventListener('click', ()=> openQRCards(true));
 
-// ---------- RESET ----------
-$('#btnResetAll').addEventListener('click', ()=>{
+// RESET
+document.getElementById('btnResetAll').addEventListener('click', ()=>{
   if(!confirm('Tout réinitialiser ? (élèves, livres, prêts, historique)')) return;
   if(!confirm('Vraiment tout effacer ?')) return;
   state={students:[],books:[],loans:[],history:[]}; save(); render(); toast('Données réinitialisées');

@@ -1,4 +1,4 @@
-MaPetiteBiblio v6.0 — version complète
+MaPetiteBiblio v6.1 — correction d'affichage + version complète
 - index.html (accueil) → app.html (application)
 - PWA: manifest, service-worker, icônes, favicon
 - Élèves: +/liste, recherche/tri, modifier/supprimer (protégé), QR élèves (afficher & imprimer)
