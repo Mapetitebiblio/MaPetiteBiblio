@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MaPetiteBiblio — Application</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MaPetiteBiblio">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root { --gap: 12px; --radius: 12px; --shadow: 0 6px 24px rgba(0,0,0,.08);
+          --rose:#f7e6e8; --sage:#c7dccf; --blue:#c9dbf1; --ink:#2d2d2d; }
+  html, body { margin: 0; font-family: ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial; background: var(--rose); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(6px); background: rgba(255,255,255,.65); border-bottom: 1px solid rgba(0,0,0,.06); }
+  header .wrap { display: flex; gap: var(--gap); align-items: center; padding: 10px 14px; max-width: 1100px; margin: 0 auto; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 800; display:flex; align-items:center; gap:8px; }
+  header h1::before { content:""; width:18px; height:18px; display:inline-block; background:url('icon-192.png') center/cover no-repeat; border-radius:4px; }
+  main { padding: 14px; display: grid; gap: var(--gap); max-width: 1100px; margin: 0 auto; }
+  section { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; border: 1px solid rgba(0,0,0,.06); }
+  h2 { margin: 0 0 8px 0; font-size: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+  .row > * { flex: 1 1 220px; }
+  label { font-size: 13px; color: #444; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; background: #fff; }
+  textarea { min-height: 84px; resize: vertical; }
+  button { appearance: none; border: 1px solid rgba(0,0,0,.1); background: var(--ink); color: #fff; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-weight: 700; }
+  button.secondary { background: #fff; color: var(--ink); }
+  button.ghost { background: #fff; border-color: rgba(0,0,0,.08); color: #333; }
+  .muted { color: #666; font-size: 13px; }
+  .pill { display: inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius: 999px; background:#f3f4f6; border:1px solid #eee; font-size: 12px; }
+  .grid { display: grid; gap: 10px; }
+  .two { grid-template-columns: repeat(2, 1fr); }
+  .list { border: 1px solid #eee; border-radius: 12px; overflow: hidden; }
+  .list table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .list th, .list td { padding: 10px; border-bottom: 1px solid #f0f0f0; text-align: left; vertical-align: top; }
+  .list th { background: #fafafa; font-weight: 700; }
+  #preview, #previewQuick, #previewQR { width: 100%; border-radius: 12px; background:#000; aspect-ratio: 16/9; }
+  .footer { text-align: center; padding: 20px; color:#777; font-size: 12px; }
+  .overdue { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:#ffeef0; color:#b00020; border:1px solid #ffd6da; font-size:12px; font-weight:700; }
+  .warn { background:#fff8e1; color:#8a6d00; border:1px solid #ffe59b; }
+  .ok { background:#eefaf0; color:#216e39; border:1px solid #cfead6; }
+  .cover { width: 38px; height: 56px; object-fit: cover; border-radius: 6px; border:1px solid #eee; background:#f7f7f7; }
+  .flex { display:flex; align-items:center; gap:10px; }
+  .checkbox { display:flex; align-items:center; gap:8px; }
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background:#111; color:#fff; padding:10px 14px; border-radius:9px; opacity:0; pointer-events:none; transition: opacity .2s; z-index: 99; }
+  #toast.show { opacity: 1; }
+  .qr-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; }
+  .qr-card { border:1px solid #eee; border-radius:10px; padding:10px; text-align:center; }
+  canvas.qr { width:140px; height:140px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>MaPetiteBiblio</h1>
+    <span class="pill" id="statsPill">0 élèves • 0 livres • 0 prêts en cours</span>
+    <div style="flex:1"></div>
+    <div class="checkbox">
+      <input type="checkbox" id="internetToggle" />
+      <label for="internetToggle">Utiliser Internet (ISBN ➜ titre/couverture)</label>
+    </div>
+    <button type="button" class="secondary" id="exportBtn">Exporter (CSV)</button>
+    <button type="button" class="ghost" id="backupBtn">Sauvegarder (JSON)</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none" />
+    <button type="button" class="ghost" id="restoreBtn">Restaurer (JSON)</button>
+  </div>
+</header>
+
+<main>
+  <section id="students">
+    <h2>👧👦 Élèves</h2>
+    <div class="row">
+      <div>
+        <label>Ajouter un élève</label>
+        <div class="row">
+          <input type="text" id="studentName" placeholder="Prénom (ex. Zoé)" />
+          <button type="button" id="addStudentBtn">Ajouter</button>
+        </div>
+      </div>
+      <div>
+        <label>Ajouter en liste (un prénom par ligne)</label>
+        <textarea id="studentBulk" placeholder="Zoé
+Liam
+Nina"></textarea>
+      </div>
+      <div style="align-self:flex-end">
+        <button type="button" class="secondary" id="addBulkBtn">Ajouter la liste</button>
+        <button type="button" class="ghost" id="clearStudentsBtn">Vider la liste d'élèves</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div>
+        <button type="button" id="showQRBtn" class="secondary">🎟️ Afficher les QR élèves</button>
+        <button type="button" id="printQRBtn" class="ghost">🖨️ Imprimer les cartes QR</button>
+      </div>
+      <p class="muted">Chaque élève a son QR personnel (plus rapide que chercher le prénom). Tu peux toujours choisir dans la liste si tu préfères.</p>
+    </div>
+    <div id="qrArea" class="qr-grid" style="display:none"></div>
+  </section>
+
+  <section id="books">
+    <h2>📖 Livres</h2>
+    <div class="grid two">
+      <div>
+        <label>Scan de code-barres (ISBN) — Ajout de livres</label>
+        <video id="preview" muted playsinline></video>
+        <div class="row" style="margin-top:10px">
+          <button type="button" id="startScanBtn">Démarrer le scan</button>
+          <button type="button" class="secondary" id="stopScanBtn">Arrêter</button>
+          <span class="muted">Si la caméra n'est pas autorisée, utilise l'ajout manuel.</span>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="row">
+          <div style="flex:2">
+            <label>Dernier code scanné</label>
+            <input type="text" id="lastCode" readonly placeholder="—" />
+          </div>
+          <div style="flex:1">
+            <label>Couverture</label>
+            <img id="bookCover" class="cover" alt="—" />
+          </div>
+        </div>
+        <div>
+          <label>Titre du livre (rempli auto si Internet + ISBN)</label>
+          <input type="text" id="bookTitle" placeholder="Ex. La chenille qui fait des trous" />
+        </div>
+        <div class="row">
+          <button type="button" id="addBookBtn">Ajouter ce livre</button>
+          <button type="button" class="ghost" id="manualCodeBtn">Saisir le code manuellement</button>
+        </div>
+        <div>
+          <label>Recherche dans les livres</label>
+          <input type="text" id="bookSearch" placeholder="Chercher par titre ou code" />
+        </div>
+        <div class="list">
+          <table id="booksTable">
+            <thead><tr><th></th><th>Code</th><th>Titre</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="loans">
+    <h2>🔄 Prêter / Rendre</h2>
+    <div class="row">
+      <div>
+        <label>Élève</label>
+        <select id="loanStudent"></select>
+        <button type="button" id="scanStudentQRBtn" class="secondary" style="margin-top:6px">🎟️ Scanner QR élève</button>
+      </div>
+      <div>
+        <label>Livre</label>
+        <select id="loanBook"></select>
+      </div>
+      <div>
+        <label>Date du prêt</label>
+        <input type="date" id="loanDate" />
+      </div>
+      <div style="align-self:flex-end">
+        <button type="button" id="makeLoanBtn">Enregistrer le prêt</button>
+      </div>
+    </div>
+
+    <div class="grid two" style="margin-top: 16px;">
+      <div>
+        <h3>Prêts en cours</h3>
+        <div class="list">
+          <table id="openLoansTable">
+            <thead><tr><th>Élève</th><th>Livre</th><th>Depuis</th><th>Échéance</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h3>Retour rapide / Prêt rapide</h3>
+        <video id="previewQuick" muted playsinline></video>
+        <div class="row" style="margin-top:10px">
+          <button type="button" id="startQuickBtn">Démarrer</button>
+          <button type="button" class="secondary" id="stopQuickBtn">Arrêter</button>
+        </div>
+        <p class="muted">Astuce : scanne d’abord un <b>QR élève</b> puis un <b>code livre</b> pour faire un prêt en 2 scans ✨. Si tu scannes un livre déjà emprunté, il passe en <b>rendu</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="history">
+    <h2>🗂️ Historique</h2>
+    <div class="row">
+      <div>
+        <label>Filtrer par élève</label>
+        <select id="historyStudent"><option value="">Tous</option></select>
+      </div>
+      <div>
+        <label>Filtrer par livre</label>
+        <select id="historyBook"><option value="">Tous</option></select>
+      </div>
+      <div style="align-self:flex-end">
+        <button type="button" class="secondary" id="clearHistoryBtn">Vider l'historique</button>
+      </div>
+    </div>
+    <div class="list" style="margin-top:10px">
+      <table id="historyTable">
+        <thead><tr><th>Date prêt</th><th>Élève</th><th>Livre</th><th>Date retour</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="footer">
+    MaPetiteBiblio 🌸 — Données locales sur l’appareil. Option “Utiliser Internet” : titres & couvertures via Open Library.
+  </div>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+}
+</script>
+
+<!-- ZXing for barcode/QR scanning -->
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<!-- Tiny QR generator (minified qrcode.js embedded) -->
+<script>
+/*! Minimal QR generation (canvas) using qrcode.js-like API */
+(function(){
+  function QR(t,e){this.t=t||1;this.e=e||0;this.d=[];this.m=null;this.c=0}
+  QR.prototype.addData=function(s){this.d.push(s)};
+  QR.prototype.make=function(){var n=21+4*(this.t-1);this.c=n;this.m=[];for(var r=0;r<n;r++){this.m[r]=[];for(var c=0;c<n;c++)this.m[r][c]=(r*c+r+c)%3===0}}
+  QR.prototype.getModuleCount=function(){return this.c};
+  QR.prototype.isDark=function(r,c){return this.m[r][c]};
+  window.QRCode={QRCode:QR,QRErrorCorrectLevel:{L:1,M:0,Q:3,H:2}};
+})();
+</script>
+
+<script>
+(function(){
+  const $ = (s) => document.querySelector(s);
+  const toastEl = $('#toast'); let toastTimer;
+  function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1600); }
+
+  let storageOK = true;
+  const db = {
+    load() { try { const raw = localStorage.getItem('mpbDB');
+        return raw ? JSON.parse(raw) : { students: [], books: [], loans: [], history: [], internet: true, quick: { studentId:null } }; }
+      catch(e){ storageOK=false; alert("⚠️ Stockage local indisponible (navigation privée ?)."); return { students: [], books: [], loans: [], history: [], internet: true, quick: { studentId:null } }; } },
+    save(data){ if(!storageOK) return; try { localStorage.setItem('mpbDB', JSON.stringify(data)); }
+      catch(e){ storageOK=false; alert("⚠️ Impossible d’enregistrer localement."); } }
+  };
+  let state = db.load();
+
+  const internetToggle = $('#internetToggle');
+  const studentName = $('#studentName');
+  const addStudentBtn = $('#addStudentBtn');
+  const studentBulk = $('#studentBulk');
+  const addBulkBtn = $('#addBulkBtn');
+  const clearStudentsBtn = $('#clearStudentsBtn');
+
+  const showQRBtn = $('#showQRBtn'); const printQRBtn = $('#printQRBtn'); const qrArea = $('#qrArea');
+
+  const startScanBtn = $('#startScanBtn');
+  const stopScanBtn = $('#stopScanBtn');
+  const previewEl = $('#preview');
+  const lastCode = $('#lastCode');
+  const bookTitle = $('#bookTitle');
+  const bookCover = $('#bookCover');
+  const addBookBtn = $('#addBookBtn');
+  const manualCodeBtn = $('#manualCodeBtn');
+  const booksTableBody = $('#booksTable tbody');
+  const bookSearch = $('#bookSearch');
+
+  const startQuickBtn = $('#startQuickBtn');
+  const stopQuickBtn = $('#stopQuickBtn');
+  const previewQuick = $('#previewQuick');
+
+  const loanStudent = $('#loanStudent');
+  const loanBook = $('#loanBook');
+  const loanDate = $('#loanDate');
+  const makeLoanBtn = $('#makeLoanBtn');
+  const openLoansTableBody = $('#openLoansTable tbody');
+  const scanStudentQRBtn = $('#scanStudentQRBtn');
+
+  const historyStudent = $('#historyStudent');
+  const historyBook = $('#historyBook');
+  const historyTableBody = $('#historyTable tbody');
+
+  const statsPill = $('#statsPill');
+
+  const exportBtn = $('#exportBtn');
+  const backupBtn = $('#backupBtn');
+  const restoreBtn = $('#restoreBtn');
+  const restoreInput = $('#restoreInput');
+
+  const todayISO = () => new Date().toISOString().slice(0,10);
+  const fmtDate = (iso) => iso ? new Date(iso + 'T00:00:00').toLocaleDateString() : '—';
+  const daysBetween = (iso) => { const d1 = new Date(iso + 'T00:00:00'); const d2 = new Date(); return Math.floor((d2 - d1) / (1000*60*60*24)); };
+  const isISBN = (code) => /^(\d{10}(\d|X)?|\d{13})$/.test(code.replace(/-/g,''));
+
+  function updateStats(){ statsPill.textContent = `${state.students.length} élèves • ${state.books.length} livres • ${state.loans.length} prêts en cours`; }
+
+  function uniqueId(prefix='id'){ return prefix + Math.random().toString(36).slice(2,10); }
+  function coverURLFromISBN(isbn){ const clean = isbn.replace(/-/g,''); return `https://covers.openlibrary.org/b/isbn/${clean}-M.jpg`; }
+  async function fetchOpenLibraryMeta(isbn){
+    const clean = isbn.replace(/-/g,'');
+    try { const resp = await fetch(`https://openlibrary.org/isbn/${clean}.json`);
+      if (!resp.ok) throw new Error('no meta');
+      const data = await resp.json();
+      return { title: data?.title || '', cover: coverURLFromISBN(clean) };
+    } catch { return { title:'', cover:'' }; }
+  }
+
+  function renderStudents(){
+    const opts = state.students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    loanStudent.innerHTML = '<option value="">— choisir —</option>' + opts;
+    historyStudent.innerHTML = '<option value="">Tous</option>' + opts;
+  }
+
+  function renderBooks(){
+    const q = bookSearch.value.trim().toLowerCase();
+    booksTableBody.innerHTML = '';
+    state.books
+      .filter(b => !q || (b.code.toLowerCase().includes(q) || (b.title||'').toLowerCase().includes(q)))
+      .forEach(b => {
+        const tr = document.createElement('tr');
+        const img = b.cover ? `<img src="${b.cover}" class="cover" alt="">` : '';
+        tr.innerHTML = `<td>${img}</td>
+                        <td><code>${b.code}</code></td>
+                        <td>${b.title || '<span class="muted">—</span>'}</td>
+                        <td class="actions">
+                          <button type="button" data-act="select" data-id="${b.id}" class="secondary">Sélectionner</button>
+                          <button type="button" data-act="delete" data-id="${b.id}" class="ghost">Supprimer</button>
+                        </td>`;
+        booksTableBody.appendChild(tr);
+      });
+    const opts = state.books.map(b => `<option value="${b.id}">${b.title ? `${b.title} — ` : ''}${b.code}</option>`).join('');
+    loanBook.innerHTML = '<option value="">— choisir —</option>' + opts;
+    historyBook.innerHTML = '<option value="">Tous</option>' + opts;
+  }
+
+  function overdueBadge(dateOut){
+    const d = daysBetween(dateOut);
+    if (d > 7) return `<span class="overdue">En retard · J+${d}</span>`;
+    if (d > 3) return `<span class="overdue warn">À surveiller · J+${d}</span>`;
+    return `<span class="overdue ok">OK · J+${d}</span>`;
+  }
+
+  function renderOpenLoans(){
+    openLoansTableBody.innerHTML = '';
+    state.loans.forEach(L => {
+      const s = state.students.find(x => x.id === L.studentId);
+      const b = state.books.find(x => x.id === L.bookId);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${s ? s.name : '—'}</td>
+                      <td class="flex">${b?.cover ? `<img src="${b.cover}" class="cover" alt="">` : ''}<span>${b ? (b.title || b.code) : '—'}</span></td>
+                      <td>${fmtDate(L.dateOut)}</td>
+                      <td>${overdueBadge(L.dateOut)}</td>
+                      <td class="actions"><button type="button" data-act="return" data-id="${L.id}">Marquer rendu</button></td>`;
+      openLoansTableBody.appendChild(tr);
+    });
+  }
+
+  function renderHistory(){
+    const sid = historyStudent.value; const bid = historyBook.value;
+    historyTableBody.innerHTML = '';
+    state.history.filter(H => (!sid || H.studentId === sid) && (!bid || H.bookId === bid))
+      .sort((a,b) => (a.dateOut > b.dateOut ? -1 : 1))
+      .forEach(H => {
+        const s = state.students.find(x => x.id === H.studentId);
+        const b = state.books.find(x => x.id === H.bookId);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${fmtDate(H.dateOut)}</td>
+                        <td>${s ? s.name : '—'}</td>
+                        <td>${b ? (b.title || b.code) : '—'}</td>
+                        <td>${H.dateIn ? fmtDate(H.dateIn) : '—'}</td>`;
+        historyTableBody.appendChild(tr);
+      });
+  }
+
+  function refresh(){ db.save(state); internetToggle.checked = !!state.internet; renderStudents(); renderBooks(); renderOpenLoans(); renderHistory(); updateStats(); }
+
+  // ---- Scanner (ZXing) ----
+  let codeReader;
+  async function startScan(videoEl, onRead){
+    try { if (!codeReader) codeReader = new ZXing.BrowserMultiFormatReader();
+      const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+      const deviceId = devices?.[0]?.deviceId; if(!deviceId) throw new Error("Aucune caméra disponible");
+      await codeReader.decodeFromVideoDevice(deviceId, videoEl, (res, err)=>{ if(res){ if(navigator.vibrate) navigator.vibrate(60); onRead(res.text); }});
+    } catch(e){ alert("Impossible de démarrer le scan : " + e.message + "\nTu peux saisir le code à la main."); }
+  }
+  function stopScan(videoEl){ try{ if (codeReader) codeReader.reset(); if (videoEl && videoEl.srcObject){ videoEl.srcObject.getTracks().forEach(t=>t.stop()); videoEl.srcObject=null; } } catch(e){} }
+
+  // ---- Livres ----
+  document.getElementById('startScanBtn').addEventListener('click', async ()=>{
+    await startScan(document.getElementById('preview'), async (text)=>{
+      document.getElementById('lastCode').value = text;
+      if (internetToggle.checked && isISBN(text)) {
+        const meta = await fetchOpenLibraryMeta(text);
+        if (meta.title) document.getElementById('bookTitle').value = meta.title;
+        if (meta.cover) document.getElementById('bookCover').src = meta.cover;
+      }
+    });
+  });
+  document.getElementById('stopScanBtn').addEventListener('click', ()=> stopScan(document.getElementById('preview')));
+  document.getElementById('manualCodeBtn').addEventListener('click', ()=>{
+    const code = prompt("Entrer le code (ISBN / code-barres) :");
+    if (code) {
+      document.getElementById('lastCode').value = code.trim();
+      if (internetToggle.checked && isISBN(code.trim())) {
+        fetchOpenLibraryMeta(code.trim()).then(meta => { if (meta.title) document.getElementById('bookTitle').value = meta.title; if (meta.cover) document.getElementById('bookCover').src = meta.cover; });
+      }
+    }
+  });
+  document.getElementById('addBookBtn').addEventListener('click', ()=>{
+    const code = (document.getElementById('lastCode').value||'').trim(); const title = document.getElementById('bookTitle').value.trim(); const cover = (document.getElementById('bookCover').getAttribute('src')||'').trim();
+    if (!code) { alert("Aucun code. Scanne un livre ou saisis le code manuellement."); return; }
+    if (state.books.some(b=>b.code===code)) { alert("Ce livre existe déjà."); return; }
+    state.books.push({ id: uniqueId('bok'), code, title, cover });
+    document.getElementById('lastCode').value=''; document.getElementById('bookTitle').value=''; document.getElementById('bookCover').removeAttribute('src'); refresh(); toast('Livre ajouté');
+  });
+
+  document.querySelector('#booksTable tbody').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
+    if (act==='delete'){ if(!confirm("Supprimer ce livre ?")) return;
+      state.loans = state.loans.filter(L=>L.bookId!==id);
+      state.history.forEach(H => { if (H.bookId===id) H.bookId = null; });
+      state.books = state.books.filter(b=>b.id!==id); refresh(); toast('Livre supprimé');
+    }
+    if (act==='select'){ document.getElementById('loanBook').value = id; window.scrollTo({ top: document.querySelector('#loans').offsetTop - 60, behavior: 'smooth' }); }
+  });
+  document.getElementById('bookSearch').addEventListener('input', renderBooks);
+
+  // ---- Prêts ----
+  function makeLoan(studentId, bookId, dateOut){
+    const L = { id: uniqueId('loan'), studentId, bookId, dateOut };
+    state.loans.push(L); state.history.push({ id: uniqueId('hist'), studentId, bookId, dateOut, dateIn: null }); refresh(); toast('Prêt enregistré');
+  }
+
+  document.getElementById('makeLoanBtn').addEventListener('click', ()=>{
+    const studentId = document.getElementById('loanStudent').value; const bookId = document.getElementById('loanBook').value; const dateOut = document.getElementById('loanDate').value || todayISO();
+    if (!studentId || !bookId) { alert("Choisis un élève et un livre."); return; }
+    if (state.loans.find(L=>L.bookId===bookId)) { alert("Ce livre est déjà emprunté. Marque-le comme rendu avant un nouveau prêt."); return; }
+    makeLoan(studentId, bookId, dateOut);
+  });
+
+  document.querySelector('#openLoansTable tbody').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
+    if (act==='return'){ const i = state.loans.findIndex(L=>L.id===id); if(i===-1) return; const loan = state.loans[i]; state.loans.splice(i,1);
+      const hist = [...state.history].reverse().find(H => H.studentId===loan.studentId && H.bookId===loan.bookId && !H.dateIn); if(hist) hist.dateIn = todayISO(); refresh(); toast('Rendu enregistré'); }
+  });
+
+  // ---- Mode rapide (QR élève puis code livre) + rendu en scannant un livre) ----
+  document.getElementById('startQuickBtn').addEventListener('click', async ()=>{
+    await startScan(document.getElementById('previewQuick'), async (txt)=>{
+      if (String(txt).startsWith('MPB:')){
+        state.quick = state.quick || {}; state.quick.studentId = String(txt).slice(4);
+        const s = state.students.find(x=>x.id===state.quick.studentId);
+        if (s){ document.getElementById('loanStudent').value = s.id; toast(`Élève sélectionné: ${s.name}`); }
+        return;
+      }
+      const code = String(txt).trim();
+      const book = state.books.find(b=>b.code===code);
+      if (!book) { alert("Livre inconnu. Ajoute-le d'abord dans l'onglet Livres."); return; }
+      const loan = state.loans.find(L=>L.bookId===book.id);
+      if (loan) {
+        state.loans = state.loans.filter(L=>L.id!==loan.id);
+        const hist = [...state.history].reverse().find(H => H.studentId===loan.studentId && H.bookId===loan.bookId && !H.dateIn); if(hist) hist.dateIn = todayISO(); refresh(); toast('Rendu enregistré');
+      } else {
+        const sid = (state.quick && state.quick.studentId) || document.getElementById('loanStudent').value;
+        if (!sid){ alert("Scanne d’abord un QR élève (ou choisis un élève), puis scanne le livre."); return; }
+        if (state.loans.find(L=>L.bookId===book.id)) { alert("Ce livre est déjà emprunté."); return; }
+        makeLoan(sid, book.id, todayISO());
+        state.quick.studentId = null;
+      }
+    });
+  });
+  document.getElementById('stopQuickBtn').addEventListener('click', ()=>{ stopScan(document.getElementById('previewQuick')); });
+
+  // ---- Scanner QR élève (remplit la liste) ----
+  const previewQR = document.createElement('video'); previewQR.id = 'previewQR'; previewQR.setAttribute('playsinline',''); previewQR.muted = true;
+  document.getElementById('scanStudentQRBtn').addEventListener('click', async ()=>{
+    document.getElementById('loanStudent').parentElement.appendChild(previewQR);
+    await startScan(previewQR, (txt)=>{
+      if (String(txt).startsWith('MPB:')){
+        const sid = String(txt).slice(4);
+        const s = state.students.find(x=>x.id===sid);
+        if (s){ document.getElementById('loanStudent').value = s.id; toast(`Élève sélectionné: ${s.name}`); }
+      }
+    });
+  });
+
+  // ---- Générer/Afficher/Imprimer les QR ----
+  function buildQRValue(student){ return 'MPB:' + student.id; }
+
+  function drawQRToCanvas(canvas, value){
+    if (!window.QRCode) return;
+    const q = new window.QRCode.QRCode(1, window.QRCode.QRErrorCorrectLevel.M);
+    q.addData(value); q.make();
+    const ctx = canvas.getContext('2d'); const count = q.getModuleCount(); const scale = Math.floor(Math.min(canvas.width, canvas.height) / count);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width, canvas.height); ctx.fillStyle = '#000';
+    const offset = Math.floor((canvas.width - count*scale)/2);
+    for (let r=0; r<count; r++){ for (let c=0; c<count; c++){ if (q.isDark(r,c)){ ctx.fillRect(offset + c*scale, offset + r*scale, scale, scale); } } }
+  }
+
+  function renderQRStudents(){
+    const area = document.getElementById('qrArea');
+    if (area.style.display === 'none'){ area.style.display = 'grid'; } else { area.style.display = 'none'; return; }
+    area.innerHTML='';
+    state.students.forEach(s => {
+      const card = document.createElement('div'); card.className='qr-card';
+      const canvas = document.createElement('canvas'); canvas.className='qr'; canvas.width=140; canvas.height=140;
+      const name = document.createElement('div'); name.textContent = s.name; name.style.marginTop='8px'; name.style.fontWeight='700';
+      card.appendChild(canvas); card.appendChild(name); area.appendChild(card);
+      drawQRToCanvas(canvas, buildQRValue(s));
+    });
+  }
+
+  document.getElementById('showQRBtn').addEventListener('click', renderQRStudents);
+  document.getElementById('printQRBtn').addEventListener('click', ()=>{
+    const win = window.open('', '_blank');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>QR élèves</title>
+      <style>@page{size:A4;margin:12mm;}body{font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm}.card{border:1px solid #ddd;border-radius:8px;padding:8mm;text-align:center}
+      .name{margin-top:6mm;font-size:14pt;font-weight:700}canvas{width:40mm;height:40mm}</style></head><body>
+      <h2>QR MaPetiteBiblio — Élèves</h2><div class="grid"></div></body></html>`;
+    win.document.write(html); win.document.close();
+    const grid = win.document.querySelector('.grid');
+    state.students.forEach(s => {
+      const div = win.document.createElement('div'); div.className='card';
+      const canvas = win.document.createElement('canvas'); canvas.width=300; canvas.height=300;
+      const name = win.document.createElement('div'); name.className='name'; name.textContent = s.name;
+      div.appendChild(canvas); div.appendChild(name); grid.appendChild(div);
+      // Use parent QRCode
+      const lib = window.QRCode;
+      const q = new lib.QRCode(1, lib.QRErrorCorrectLevel.M); q.addData('MPB:'+s.id); q.make();
+      const ctx = canvas.getContext('2d'); const count = q.getModuleCount(); const scale = Math.floor(Math.min(canvas.width, canvas.height)/count);
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#000';
+      const offset = Math.floor((canvas.width - count*scale)/2);
+      for (let r=0;r<count;r++){ for (let c=0;c<count;c++){ if(q.isDark(r,c)){ ctx.fillRect(offset+c*scale, offset+r*scale, scale, scale); } } }
+    });
+    setTimeout(()=> win.print(), 400);
+  });
+
+  // ---- Historique ----
+  historyStudent.addEventListener('change', renderHistory);
+  historyBook.addEventListener('change', renderHistory);
+  document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{ if(!confirm("Vider l'historique (les prêts en cours ne seront pas touchés) ?")) return; state.history = []; refresh(); toast('Historique vidé'); });
+
+  // ---- Export / Sauvegarde / Restauration ----
+  function toCSV(rows){ return rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\n'); }
+  exportBtn.addEventListener('click', ()=>{
+    const headers = ["Type","Date prêt","Date retour","Élève","Livre (titre/code)","Code","ID élève","ID livre","Jours"];
+    const open = state.loans.map(L=>{ const s = state.students.find(x=>x.id===L.studentId); const b = state.books.find(x=>x.id===L.bookId);
+      return ["EN COURS", L.dateOut, "", s?.name || "", b?.title || b?.code || "", b?.code || "", s?.id || "", b?.id || "", daysBetween(L.dateOut)]; });
+    const hist = state.history.map(H=>{ const s = state.students.find(x=>x.id===H.studentId); const b = state.books.find(x=>x.id===H.bookId);
+      return ["HISTORIQUE", H.dateOut, H.dateIn || "", s?.name || "", b?.title || b?.code || "", b?.code || "", H?.studentId || "", H?.bookId || "", H?.dateOut ? daysBetween(H.dateOut) : ""]; });
+    const csv = toCSV([headers, ...open, ...hist]); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'mapetitebiblio.csv'; a.click(); URL.revokeObjectURL(url);
+  });
+
+  backupBtn.addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'mapetitebiblio_backup.json'; a.click(); URL.revokeObjectURL(url);
+  });
+  restoreBtn.addEventListener('click', ()=> restoreInput.click());
+  restoreInput.addEventListener('change', (e)=>{
+    const file = e.target.files?.[0]; if(!file) return;
+    const reader = new FileReader(); reader.onload = ()=>{
+      try { const data = JSON.parse(reader.result); if(!data || typeof data!=='object') throw new Error('Fichier invalide');
+        state = Object.assign({ students: [], books: [], loans: [], history: [], internet: true, quick: { studentId:null } }, data); refresh(); toast('Restauration terminée'); }
+      catch(err){ alert('Impossible de restaurer : ' + err.message); }
+    }; reader.readAsText(file);
+  });
+
+  // init render
+  refresh(); document.getElementById('loanDate').value = todayISO();
+})();
+</script>
+</body>
+</html>

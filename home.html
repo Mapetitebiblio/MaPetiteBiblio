@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bienvenue sur MaPetiteBiblio 🌸</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MaPetiteBiblio">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root { --rose:#f7e6e8; --sage:#c7dccf; --blue:#c9dbf1; --ink:#2d2d2d; --gap:16px; --rose-btn:#f8d5dc; }
+  html, body { margin:0; background:var(--rose); color:var(--ink); font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+  header { padding: 24px 18px; background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0)); }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .brand img { width: 42px; height: 42px; border-radius: 10px; border: 1px solid rgba(0,0,0,.06); }
+  h1 { margin:0; font-size:28px; letter-spacing:.2px; }
+  main { padding: 10px 18px 40px; }
+  .card { background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.06); padding:24px; margin:18px 0; }
+  .btn { display:inline-block; padding:12px 16px; border-radius:10px; font-weight:700; text-decoration:none; border:1px solid rgba(0,0,0,.08); background: var(--sage); color:#1e3c2f; }
+  .btn.secondary { background: var(--blue); color:#143a62; }
+  .btn.rose { background: var(--rose-btn); color:#5a2f3a; }
+  .btn + .btn { margin-left: 8px; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:var(--gap); }
+  @media (max-width: 800px){ .grid { grid-template-columns: 1fr; } }
+  ul { margin: 0; padding-left: 18px; }
+  #copied { display:none; margin-left:10px; font-weight:700; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <img src="icon-192.png" alt="Icône MaPetiteBiblio" />
+    <h1>Bienvenue sur MaPetiteBiblio 🌸</h1>
+  </div>
+</header>
+<main class="wrap">
+  <section class="card">
+    <p>Une petite application douce pour suivre les emprunts de livres à l’école : scanne, prête, rends, et garde l’historique en quelques gestes.</p>
+    <p>
+      <a class="btn" href="./index.html">📖 Ouvrir l’application</a>
+      <a class="btn secondary" href="#install">📲 Installer sur iPhone</a>
+    </p>
+    <p>
+      <button class="btn rose" id="copyBtn" type="button">📋 Copier l’adresse du site</button>
+      <span id="copied">Adresse copiée 💛</span>
+    </p>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Fonctionnalités clés</h3>
+      <ul>
+        <li>Scan code-barres/ISBN avec la caméra</li>
+        <li>Prêter / Rendre + <em>retour rapide par scan</em></li>
+        <li><b>NOUVEAU :</b> QR par élève (sélection ultra-rapide)</li>
+        <li>Badges de “J+X” (retard)</li>
+        <li>Complétion titre/couverture (option “Utiliser Internet”)</li>
+        <li>Export CSV, Sauvegarder / Restaurer JSON</li>
+        <li>Tout est stocké <b>localement</b> sur l’appareil</li>
+      </ul>
+    </div>
+    <div class="card" id="install">
+      <h3>Installer sur iPhone</h3>
+      <ol>
+        <li>Ouvrir cette page dans <b>Safari</b> sur iPhone</li>
+        <li>Toucher <b>Partager</b> → <b>Sur l’écran d’accueil</b></li>
+        <li>Ouvrir l’icône <b>MaPetiteBiblio</b></li>
+      </ol>
+      <p>C’est tout 💛 L’app fonctionne aussi hors-ligne.</p>
+    </div>
+  </section>
+</main>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+}
+const copyBtn = document.getElementById('copyBtn');
+const copied = document.getElementById('copied');
+copyBtn?.addEventListener('click', async () => {
+  const url = 'https://TON_PSEUDO.github.io/mapetitebiblio';
+  try {
+    await navigator.clipboard.writeText(url);
+    copied.style.display = 'inline';
+    setTimeout(()=> copied.style.display='none', 1500);
+  } catch (e) {
+    prompt('Copier cette adresse :', url);
+  }
+});
+</script>
+</body>
+</html>
