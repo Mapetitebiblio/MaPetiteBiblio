@@ -1,7 +1,7 @@
 {
   "name": "MaPetiteBiblio",
   "short_name": "MaBiblio",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8e2e8",
   "theme_color": "#1f2937",
