@@ -1,0 +1,111 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MaPetiteBiblio</title>
+<link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css"></head><body>
+<header><h1><img src="logo.png" alt="">MaPetiteBiblio</h1></header>
+<main>
+  <div class="card" style="padding:16px" id="screen-pret">
+    <h2>📦 Prêter un livre</h2>
+    <div class="actions">
+      <select id="selStudent" class="big" style="flex:1"></select>
+      <button class="big btn" id="scanQRBtn" style="flex:1">🎟️ QR élève</button>
+    </div>
+    <input type="text" id="bookCode" inputmode="numeric" placeholder="Scanne ou saisis le code du livre">
+    <div class="actions">
+      <button class="big btn primary" id="btnPret">Enregistrer le prêt</button>
+      <button class="big btn" id="btnScanBook">📷 Scanner livre</button>
+    </div>
+    <div class="helper">QR élève → code livre = prêt immédiat. Nouveau prêt = <b>ancien rendu automatiquement</b>.</div>
+  </div>
+
+  <div class="card hidden" style="padding:16px" id="screen-rendre">
+    <h2>✅ Rendre un livre</h2>
+    <p class="helper">Scanne le code, il sera marqué <b>rendu</b>.</p>
+    <div class="actions">
+      <button class="big btn primary" id="btnScanReturn">📷 Scanner livre</button>
+      <input type="text" id="returnCode" class="big" placeholder="Ou entrer le code">
+    </div>
+    <button class="big btn" id="btnDoReturn" style="margin-top:10px">Valider le retour</button>
+  </div>
+
+  <div class="card hidden" style="padding:16px" id="screen-eleves">
+    <h2>👧👦 Élèves <span class="badge" id="badgeStudents">0</span></h2>
+    <div class="actions">
+      <input type="text" id="inStudentName" placeholder="Prénom (ex. Zoé)" style="flex:2">
+      <button class="btn primary" id="btnAddStudent" style="flex:1">Ajouter</button>
+    </div>
+    <label style="margin-top:10px">Ajouter en liste (un prénom par ligne)</label>
+    <textarea id="inBulk" placeholder="Zoé
+Liam
+Nina"></textarea>
+    <button class="big btn" id="btnAddBulk" style="margin-top:8px">Ajouter la liste</button>
+
+    <div class="actions" style="margin-top:10px">
+      <input type="text" id="searchStudents" placeholder="Rechercher un prénom" style="flex:2">
+      <select id="sortStudents" class="btn" style="flex:1">
+        <option value="az">Trier A→Z</option>
+        <option value="za">Trier Z→A</option>
+        <option value="new">Plus récents</option>
+      </select>
+      <button class="btn" id="btnShowQRCards">🧾 QR élèves</button>
+      <button class="btn" id="btnPrintQRCards">🖨️ Imprimer</button>
+      <button class="btn" id="btnExportJSON">💾 Exporter</button>
+      <input type="file" id="importInput" accept=".json" style="display:none">
+      <button class="btn danger" id="btnImportJSON">📥 Importer</button>
+      <button class="btn danger" id="btnResetAll">🗑️ Réinitialiser</button>
+    </div>
+    <div id="listStudents" class="list"></div>
+  </div>
+
+  <div class="card hidden" style="padding:16px" id="screen-livres">
+    <h2>📚 Livres <span class="badge" id="badgeBooks">0</span></h2>
+    <div class="actions">
+      <input type="text" id="inBookCode" placeholder="Code (ISBN/barres)" style="flex:1">
+      <input type="text" id="inBookTitle" placeholder="Titre (facultatif)" style="flex:1">
+      <button class="btn primary" id="btnAddBook" style="flex:1">Ajouter</button>
+    </div>
+    <div class="actions" style="margin-top:10px">
+      <input type="text" id="searchBooks" placeholder="Rechercher par titre ou code" style="flex:2">
+      <select id="sortBooks" class="btn" style="flex:1">
+        <option value="az">Trier A→Z</option>
+        <option value="za">Trier Z→A</option>
+        <option value="new">Plus récents</option>
+      </select>
+      <button class="btn" id="btnScanAddBook">📷 Scanner pour ajouter</button>
+    </div>
+    <div id="listBooks" class="list"></div>
+  </div>
+
+  <div class="card hidden" style="padding:16px" id="screen-histo">
+    <h2>🗂️ Historique</h2>
+    <div id="histoList" class="helper"></div>
+    <div class="actions" style="margin-top:10px">
+      <button class="big btn" id="btnExportCSV" style="flex:1">⬇️ Exporter CSV</button>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<nav class="nav">
+  <a href="#pret" id="tab-pret" class="active">Prêter</a>
+  <a href="#rendre" id="tab-rendre">Rendre</a>
+  <a href="#eleves" id="tab-eleves">Élèves</a>
+  <a href="#livres" id="tab-livres">Livres</a>
+  <a href="#historique" id="tab-historique">Historique</a>
+</nav>
+
+<div class="drawer" id="drawer">
+  <h3>📖 Emprunts de <span id="drawerName"></span></h3>
+  <div id="drawerContent" class="list"></div>
+  <div class="actions" style="margin-top:10px">
+    <button class="btn" id="drawerClose">Fermer</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="app.js"></script>
+</body></html>

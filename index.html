@@ -1,0 +1,32 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MaPetiteBiblio</title>
+<link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css"></head><body>
+<div class="splash" id="splash"><img src="logo.png" alt="logo"></div>
+<header><h1><img src="logo.png" alt="">MaPetiteBiblio</h1></header>
+<main>
+  <div class="card" style="padding:18px">
+    <div class="actions" style="margin-bottom:6px">
+      <a class="btn primary big" href="app.html#pret" style="flex:1">📦 Prêter un livre</a>
+      <a class="btn big" href="app.html#rendre" style="flex:1">✅ Rendre un livre</a>
+    </div>
+    <div class="actions">
+      <a class="btn big" href="app.html#eleves" style="flex:1">👧👦 ÉLÈVES</a>
+      <a class="btn big" href="app.html#livres" style="flex:1">📚 LIVRES</a>
+    </div>
+    <a class="btn big" href="app.html#historique" style="margin-top:10px">🗂️ Historique</a>
+  </div>
+</main>
+<nav class="nav">
+  <a href="app.html#pret" class="active">Prêter</a>
+  <a href="app.html#rendre">Rendre</a>
+  <a href="app.html#eleves">Élèves</a>
+  <a href="app.html#livres">Livres</a>
+  <a href="app.html#historique">Historique</a>
+</nav>
+<script>
+setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 1500);
+if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js')); }
+</script></body></html>
