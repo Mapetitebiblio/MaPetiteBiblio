@@ -170,14 +170,43 @@ $('#btnDoReturn').addEventListener('click', ()=>{
 let reader;
 async function scan(callback){
   try{
-    if(!reader) reader=new ZXing.BrowserMultiFormatReader();
-    const devs=await ZXing.BrowserCodeReader.listVideoInputDevices(); const id=devs?.[0]?.deviceId; if(!id) throw new Error('Aucune caméra');
-    const video=document.createElement('video'); video.className='scanbox'; video.playsInline=true;
-    const wrap=document.createElement('div'); wrap.className='card'; wrap.style.padding='12px'; wrap.appendChild(video); document.querySelector('main').prepend(wrap);
-    await reader.decodeFromVideoDevice(id, video, (res,err)=>{ if(res){ if(navigator.vibrate) navigator.vibrate(50); try{reader.reset()}catch(e){}; wrap.remove(); callback(res.text); } });
-  }catch(e){ alert('Scan impossible : '+e.message); }
+    if(!reader) reader = new ZXing.BrowserMultiFormatReader();
+
+    // Récupère la liste des caméras (compatible iPhone)
+    let devices = [];
+    if (navigator.mediaDevices?.enumerateDevices) {
+      devices = (await navigator.mediaDevices.enumerateDevices())
+        .filter(d => d.kind === 'videoinput');
+    }
+
+    // Choisit la caméra arrière (souvent la dernière)
+    const deviceId = devices[devices.length - 1]?.deviceId || undefined;
+
+    // Prépare la caméra
+    const video = document.createElement('video');
+    video.className = 'scanbox';
+    video.playsInline = true; // indispensable sur iPhone
+    video.muted = true;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'card';
+    wrap.style.padding = '12px';
+    wrap.appendChild(video);
+    document.querySelector('main').prepend(wrap);
+
+    // Démarre le scan
+    await reader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+      if (result) {
+        if (navigator.vibrate) navigator.vibrate(50);
+        try { reader.reset(); } catch(e){}
+        wrap.remove();
+        callback(result.text);
+      }
+    });
+  } catch(e){
+    alert('Scan impossible : ' + e.message);
+  }
 }
-document.getElementById('scanQRBtn').addEventListener('click', ()=> scan((txt)=>{
   if(String(txt).startsWith('MPB:')){
     const sid=String(txt).slice(4); const s=state.students.find(x=>x.id===sid); if(s){ $('#selStudent').value=s.id; toast('Élève : '+s.name); } else toast('QR inconnu');
   }else toast('QR élève attendu');
