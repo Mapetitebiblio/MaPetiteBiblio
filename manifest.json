@@ -1,12 +1,12 @@
 {
-  "name": "MaPetiteBiblio",
-  "short_name": "MaBiblio",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#f7efe7",
-  "theme_color": "#4a372f",
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  "name":"MaPetiteBiblio",
+  "short_name":"MaBiblio",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#f7efe7",
+  "theme_color":"#4a372f",
+  "icons":[
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
   ]
 }

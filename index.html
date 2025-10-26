@@ -27,6 +27,6 @@
   <a href="app.html#historique">Historique</a>
 </nav>
 <script>
-setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.style.display='none'; }, 1500);
+setTimeout(()=>{var s=document.getElementById('splash'); if(s) s.style.display='none';},1500);
 if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js')); }
 </script></body></html>

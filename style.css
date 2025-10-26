@@ -5,7 +5,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg) url('bg.png') center/cover fixed no-repeat;color:var(--ink);
-  font-family:ui-rounded, -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;}
+  font-family:ui-rounded,-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial}
 .card{background:var(--card);backdrop-filter:saturate(1.1) blur(6px);border:1px solid rgba(255,255,255,.6);border-radius:var(--radius);box-shadow:var(--shadow)}
 .btn{appearance:none;border:1px solid #e7dbd2;background:#fff;color:var(--ink);border-radius:16px;padding:14px 16px;font-weight:800}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#f4c1cc}
@@ -17,7 +17,6 @@ header{position:sticky;top:0;background:rgba(247,239,231,.85);backdrop-filter:bl
 h1{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:var(--ink)}
 h1 img{width:28px;height:28px;border-radius:999px;border:1px solid #eee;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 main{max-width:760px;margin:0 auto;padding:12px; padding-bottom:120px}
-.row{display:grid;gap:10px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 .list{display:grid;gap:8px;margin-top:10px}
 .item{display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,.7);border-radius:12px;padding:10px 12px;background:#fff}
